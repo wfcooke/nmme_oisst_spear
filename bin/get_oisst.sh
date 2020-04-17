@@ -3,8 +3,8 @@
 umask 022
 
 iy=$(date +'%Y') #current year
-#iy_prev=$(date --date="$(date +%Y-%m-15) -1 month") #year of the previous month 
-iy_prev=2019
+iy_prev=$(date --date="$(date +%Y-%m-15) -1 month") #year of the previous month
+
 machine=ftp.cdc.noaa.gov
 
 dout=/local2/home/NMME/oisst_spear/raw
