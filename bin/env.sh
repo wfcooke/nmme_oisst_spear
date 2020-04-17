@@ -32,7 +32,7 @@ OUT_DIR=${BASE_DIR}/NetCDF
 # Thus XFER_TARGET should have the [<host>:] included
 #XFER_COMMAND='gcp --sync -cd --checksum'
 XFER_COMMAND='gcp --sync -cd '
-XFER_TARGET=gfdl:/archive/cem/NMME/INPUTS/oisst_spear/
+XFER_TARGET=gfdl:/archive/$USER/NMME/INPUTS/oisst_spear/
 
 
 # Can run other sh commands

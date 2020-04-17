@@ -4,58 +4,6 @@ echoerr() {
     echo "$@" 1>&2
 }
 
-# Verify the time passed in fits the YYYYMM format.
-#
-# verifyTime "YYYYMM"
-verifyTime () {
-    local timeString=$@
-
-    len=$( expr length "${timeString}" )
-    if [[ $len -ne 6 ]]; then
-        echoerr "FATAL: Time string is not in the correct format.  Expected 'YYYYMM'."
-        echoerr "FATAL: Got '$timeString'."
-        exit 65
-    fi
-
-    local yr=$( expr substr "${timeString}" 1 4 )
-    local mo=$( expr substr "${timeString}" 5 2 )
-    if [[ $yr -le 0 ]]; then
-        echoerr "FATAL: Not a valid year.  Year must be greater than 0.  Got '$yr'."
-        exit 65
-    fi
-    # The "10#" is needed to keep sh from using ocal numbers
-    if [[ "10#$mo" -lt 1 || "10#$mo" -gt 12 ]]; then
-        echoerr "FATAL: Not a valid month.  Month must be in the range [1,12].  Got '%mo'."
-        exit 65
-    fi
-}
-
-usage() {
-    echo "Usage: do_oisst_qc.sh [OPTIONS]"
-}
-
-help () {
-    usage
-    echo ""
-    echo "Options:"
-    echo "     -h"
-    echo "          Display usage information."
-    echo ""
-    echo "     -o <out_file>"
-    echo "          Write the output to file <out_file> instead of default file"
-    echo "          location."
-    echo ""
-    echo "     -t <YYYYMM>"
-    echo "          Create OISST file for month MM and year YYYY"
-    echo "          Default: Current year/month"
-    echo ""
-    echo "     -i <file>"
-    echo "          Use the files in <file> to generate a specific file.  Must use"
-    echo "          the -o and -t options, otherwise the script may think the file"
-    echo "          has already been generated."
-    echo ""
-}
-
 # Set the umask for world readable
 umask 022
 
@@ -70,32 +18,6 @@ BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # That is, we need to process ${yearPrev}1231 - ${yearCur}${monCur}01.
 yearCur=$( date '+%Y' )
 monCur=$( date '+%m' )
-
-# Read in command line options
-while getopts :ho:t:i: OPT; do
-    case "$OPT" in
-        h)
-            help
-            exit 0
-            ;;
-        o)
-            OUTFILE=${OPTARG}
-            ;;
-        t)
-            verifyTime ${OPTARG}
-            yearCur=$( expr substr "${OPTARG}" 1 4 )
-            monCur=$( expr substr "${OPTARG}" 5 2 )
-            ;;
-        i)
-            inLogFile=${OPTARG}
-            ;;
-        \?)
-            echoerr "Unknown option:" $${OPTARG}
-            usage >&2
-            exit 1
-            ;;
-    esac
-done
 
 # Source the env.sh file for the current environment, or exit if it doesn't exit.
 if [[ ! -e ${BIN_DIR}/env.sh ]]; then
@@ -230,7 +152,7 @@ rm -f ferret.jnl tmp1.nc ${REGRID_OUT}
 
 restoring_sst=sst_oidaily_icecorr_icec30_fill_${yearCur}.nc
 
-REGRID_DIR=/home/cem/git/nmme/oisst/regrid #remove hard coding
+REGRID_DIR=/home/nmme/oisst_spear/regrid #remove hard coding
 cp ${REGRID_DIR}/* .
 
 ferret <<!
