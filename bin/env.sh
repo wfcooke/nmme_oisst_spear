@@ -46,4 +46,5 @@ module load ferret/7.02
 module load gcp
 module load nco/4.3.1
 module load ncarg/6.2.0
+module load cdo
 module load fre/bronx-16
