@@ -68,13 +68,10 @@ yearPrev=$( date -d "${yearCur}-${monCur}-01 - 1year" '+%Y' )
 
 # Convert the start/end Dates  to d-mmm-yyyy and yymmdd
 firstDate="${yearPrev}-12-31"
-echo ${firstDate}
 lastDate="${yearCur}-${monCur}-01"
-echo ${lastDate}
 sDate=$( date -d $firstDate '+%-d-%b-%Y' )
 eDate=$( date -d $lastDate '+%-d-%b-%Y' )
-s_yymmdd=$( date -d $firstDate '+%y%m%d' )
-e_yymmdd=$( date -d $lastDate '+%y%m%d' )
+e_yyyymmdd=$( date -d $lastDate '+%Y-%m-%d' )
 
 # Output file
 sst_spear=sst_oidaily_icecorr_icec25_${yearCur}.nc
@@ -100,6 +97,21 @@ if [[ ! -e ${inFile_sst} || ! -e ${inFile_ice} ]]; then
     echoerr "ERROR: Unable to find raw data file file for ${yearCur}-${m}-${d}"
     exit 1 
 fi                    
+
+#check that the first of the current month is in the files
+cdo seldate,${e_yyyymmdd} ${inFile_sst} out.nc
+if [ $? != 0 ]; then
+    echo "ERROR: Unable to find ${e_yyyymmdd} in the file ${inFile_sst}"
+    exit 1
+fi
+rm -f out.nc
+
+cdo seldate,${e_yyyymmdd} ${inFile_ice} out.nc
+if [ $? != 0 ]; then
+    echo "ERROR: Unable to fine ${e_yyyymmdd} in the file ${inFile_ice}"
+    exit 1
+fi
+rm -f out.nc
 
 #concatenate ${yearCur} and ${yearPrev} files
 ncrcat ${RAW_DIR}/sst.day.mean.${yearPrev}.v2.nc ${RAW_DIR}/sst.day.mean.${yearCur}.v2.nc tmp.sst.nc
