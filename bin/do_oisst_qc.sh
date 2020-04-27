@@ -66,6 +66,9 @@ fi
 # Get the year and month for current date - 1month
 yearPrev=$( date -d "${yearCur}-${monCur}-01 - 1year" '+%Y' )
 
+# Get the year and month for the last month for OK file
+last_yearmon=$( date -d "$(date +%Y-%m-15) -1 month" +'%Y%m' )
+
 # Convert the start/end Dates  to d-mmm-yyyy and yymmdd
 firstDate="${yearPrev}-12-31"
 lastDate="${yearCur}-${monCur}-01"
@@ -82,7 +85,7 @@ if [[ -z $OUTFILE ]]; then
 fi
 
 # Check if the output file exists. If it exists, exit.
-OKFILE=${OUT_DIR}/${yearCur}${monCur}.OK
+OKFILE=${OUT_DIR}/${last_yearmon}.OK
 if [[ -e ${OKFILE} ]]; then
     echoerr "File '${OKFILE}' already exists.  Not processing."
     exit 0
