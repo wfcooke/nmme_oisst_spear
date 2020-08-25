@@ -107,11 +107,25 @@ if [ $? != 0 ]; then
     echo "ERROR: Unable to find ${e_yyyymmdd} in the file ${inFile_sst}"
     exit 1
 fi
+#check to see if data for date is missing
+gridsize=$( echo `cdo infon out.nc` | awk '{split($0,a," "); print a[20]}' )
+missing=$( echo `cdo infon out.nc` | awk '{split($0,a," "); print a[21]}' )
+if [ ${gridsize} == ${missing} ]; then
+    echoerr "ERROR: All data is missing for ${e_yyyymmdd} in ${inFile_sst}"
+    exit 1
+fi
 rm -f out.nc
 
 cdo seldate,${e_yyyymmdd} ${inFile_ice} out.nc
 if [ $? != 0 ]; then
     echo "ERROR: Unable to fine ${e_yyyymmdd} in the file ${inFile_ice}"
+    exit 1
+fi
+#check to see if data for date is missing
+gridsize=$( echo `cdo infon out.nc` | awk '{split($0,a," "); print a[20]}' )
+missing=$( echo `cdo infon out.nc` | awk '{split($0,a," "); print a[21]}' )
+if [ ${gridsize} == ${missing} ]; then
+    echoerr "ERROR: All data is missing for ${e_yyyymmdd} in ${inFile_ice}"
     exit 1
 fi
 rm -f out.nc
