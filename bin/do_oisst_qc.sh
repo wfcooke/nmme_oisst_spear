@@ -138,7 +138,7 @@ ncrcat  ${RAW_DIR}/icec.day.mean.${yearPrev}.v2.nc ${RAW_DIR}/icec.day.mean.${ye
 ferret <<!
 use tmp.sst.nc
 use tmp.ice.nc
-set memory/size=1000
+set memory/size=2000
 !define a yearly axis
 DEFINE AXIS/CALENDAR=JULIAN/T="${sDate}:12:00:00":"${eDate}:12:00:00":1/UNITS=days tday
 let sst1 = IF icec[d=2] GT 0.25 THEN 1.8*(-1) ELSE sst[d=1]
@@ -188,7 +188,7 @@ ferret <<!
 use HadISST.sst.filled.nc
 use tmp.sst.nc
 use tmp.ice.nc
-set memory/size=1000
+set memory/size=2000
 DEFINE AXIS/CALENDAR=JULIAN/T="${sDate}:12:00:00":"${eDate}:12:00:00":1/UNITS=days tday
 let sst1 = IF icec[d=3] GT 0.30 THEN 1.8*(-1) ELSE sst[d=2]
 let sst2 = sst1[i=@FNR,j=@FNR,gt=tday]
