@@ -66,8 +66,15 @@ fi
 # Get the year and month for current date - 1month
 yearPrev=$( date -d "${yearCur}-${monCur}-01 - 1year" '+%Y' )
 
+# Special case for January
+if [[ ${monCur} == 01 ]]; then
+    #set yearPrev to yearPrev-1
+    yearPrev=$(( $yearPrev -1 ))
+fi
+
 # Get the year and month for the last month for OK file
 last_yearmon=$( date -d "$(date +%Y-%m-15) -1 month" +'%Y%m' )
+last_year=$( date -d "$(date +%Y-%m-15) -1 month" +'%Y' )
 
 # Convert the start/end Dates  to d-mmm-yyyy and yymmdd
 firstDate="${yearPrev}-12-31"
@@ -77,7 +84,7 @@ eDate=$( date -d $lastDate '+%-d-%b-%Y' )
 e_yyyymmdd=$( date -d $lastDate '+%Y-%m-%d' )
 
 # Output file
-sst_spear=sst_oidaily_icecorr_icec25_${yearCur}.nc
+sst_spear=sst_oidaily_icecorr_icec25_${last_year}.nc
 
 if [[ -z $OUTFILE ]]; then
     # Set the default OUTFILE if not set by option above
@@ -94,19 +101,20 @@ fi
 # Begin actual work, need to be in WORK_DIR
 cd ${WORK_DIR}
 
-    inFile_sst="${RAW_DIR}/sst.day.mean.${yearCur}.v2.nc"
-    inFile_ice="${RAW_DIR}/icec.day.mean.${yearCur}.v2.nc"
+    inFile_sst="${RAW_DIR}/sst.day.mean.${last_year}.v2.nc"
+    inFile_ice="${RAW_DIR}/icec.day.mean.${last_year}.v2.nc"
 if [[ ! -e ${inFile_sst} || ! -e ${inFile_ice} ]]; then
-    echoerr "ERROR: Unable to find raw data file file for ${yearCur}-${m}-${d}"
+    echoerr "ERROR: Unable to find raw data file file for ${last_year}-${m}-${d}"
     exit 1 
 fi                    
 
 #check that the first of the current month is in the files
-cdo seldate,${e_yyyymmdd} ${inFile_sst} out.nc
-if [ $? != 0 ]; then
-    echo "ERROR: Unable to find ${e_yyyymmdd} in the file ${inFile_sst}"
-    exit 1
+if [[ ${monCur} == 01 ]]; then
+    cdo seldate,${e_yyyymmdd} ${RAW_DIR}/sst.day.mean.${yearCur}.v2.nc out.nc
+else
+    cdo seldate,${e_yyyymmdd} ${inFile_sst} out.nc
 fi
+
 #check to see if data for date is missing
 gridsize=$( echo `cdo infon out.nc` | awk '{split($0,a," "); print a[20]}' )
 missing=$( echo `cdo infon out.nc` | awk '{split($0,a," "); print a[21]}' )
@@ -116,11 +124,12 @@ if [ ${gridsize} == ${missing} ]; then
 fi
 rm -f out.nc
 
-cdo seldate,${e_yyyymmdd} ${inFile_ice} out.nc
-if [ $? != 0 ]; then
-    echo "ERROR: Unable to fine ${e_yyyymmdd} in the file ${inFile_ice}"
-    exit 1
+if [[ ${monCur} == 01 ]]; then
+    cdo seldate,${e_yyyymmdd} ${RAW_DIR}/icec.day.mean.${yearCur}.v2.nc out.nc
+else
+    cdo seldate,${e_yyyymmdd} ${inFile_ice} out.nc
 fi
+
 #check to see if data for date is missing
 gridsize=$( echo `cdo infon out.nc` | awk '{split($0,a," "); print a[20]}' )
 missing=$( echo `cdo infon out.nc` | awk '{split($0,a," "); print a[21]}' )
@@ -131,8 +140,13 @@ fi
 rm -f out.nc
 
 #concatenate ${yearCur} and ${yearPrev} files
-ncrcat ${RAW_DIR}/sst.day.mean.${yearPrev}.v2.nc ${RAW_DIR}/sst.day.mean.${yearCur}.v2.nc tmp.sst.nc
-ncrcat  ${RAW_DIR}/icec.day.mean.${yearPrev}.v2.nc ${RAW_DIR}/icec.day.mean.${yearCur}.v2.nc tmp.ice.nc
+if [[ $monCur == 01 ]]; then
+    ncrcat ${RAW_DIR}/sst.day.mean.${yearPrev}.v2.nc ${inFile_sst} ${RAW_DIR}/sst.day.mean.${yearCur}.v2.nc tmp.sst.nc
+    ncrcat  ${RAW_DIR}/icec.day.mean.${yearPrev}.v2.nc ${inFile_ice} ${RAW_DIR}/icec.day.mean.${yearCur}.v2.nc tmp.ice.nc
+else
+    ncrcat ${RAW_DIR}/sst.day.mean.${yearPrev}.v2.nc ${inFile_sst} tmp.sst.nc
+    ncrcat  ${RAW_DIR}/icec.day.mean.${yearPrev}.v2.nc ${inFile_ice} tmp.ice.nc
+fi
 
 #do sea ice correction for ODA
 ferret <<!
@@ -156,7 +170,7 @@ cp tmp1.nc ${OUTFILE}
 
 #regrid for ODA
 
-REGRID_OUT=sst.day.${yearCur}.1x1.nc
+REGRID_OUT=sst.day.${last_year}.1x1.nc
 
 regrid_script=${BIN_DIR}/OISST_SI.ncl
 
@@ -179,7 +193,7 @@ rm -f ferret.jnl tmp1.nc ${REGRID_OUT}
 
 #restoring correction
 
-restoring_sst=sst_oidaily_icecorr_icec30_fill_${yearCur}.nc
+restoring_sst=sst_oidaily_icecorr_icec30_fill_${last_year}.nc
 
 REGRID_DIR=/home/nmme/oisst_spear/regrid #remove hard coding
 cp ${REGRID_DIR}/* .
