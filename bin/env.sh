@@ -43,8 +43,7 @@ XFER_TARGET=gfdl:/archive/$USER/NMME/INPUTS/oisst_spear/
 module load intel_compilers/11.1.073
 module load netcdf/4.2
 module load ferret/7.02
-module load gcp
 module load nco/4.3.1
 module load ncarg/6.2.0
 module load cdo
-module load fre/bronx-16
+module load fre/bronx-18

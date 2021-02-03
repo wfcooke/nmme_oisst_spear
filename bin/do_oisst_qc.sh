@@ -178,7 +178,7 @@ if [[ ! -e ${regrid_script} ]]; then
     echoerr "ERROR: Unable to find ${regrid_script}"
 fi
 
-ncl ${regrid_script}
+ncl year=${yearCur} ${regrid_script}
 
 if [[ $? != 0 ]]; then
     echoerr "ERROR: Problem running ${regrid_script}"

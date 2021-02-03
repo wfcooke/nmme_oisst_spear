@@ -19,9 +19,6 @@ begin
 
 ; open file to write interpolated variable(s) to
 
-;year  = getenv("yearCur")
-;inFile = getenv("OUTFILE")
-year = 2020
 inFile="tmp1.nc"
 
 out = addfile("sst.day."+year+".1x1.nc","c")
