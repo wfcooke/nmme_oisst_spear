@@ -84,7 +84,7 @@ eDate=$( date -d $lastDate '+%-d-%b-%Y' )
 e_yyyymmdd=$( date -d $lastDate '+%Y-%m-%d' )
 
 # Output file
-sst_spear=sst_oidaily_icecorr_icec25_${last_year}.nc
+sst_spear=sst_oidaily_icecorr_icec25_${last_year}01_${last_yearmon}.nc
 
 if [[ -z $OUTFILE ]]; then
     # Set the default OUTFILE if not set by option above
@@ -170,7 +170,7 @@ cp tmp1.nc ${OUTFILE}
 
 #regrid for ODA
 
-REGRID_OUT=sst.day.${last_year}.1x1.nc
+REGRID_OUT=sst.day.${last_year}01_${last_yearmon}.1x1.nc
 
 regrid_script=${BIN_DIR}/OISST_SI.ncl
 
@@ -178,7 +178,8 @@ if [[ ! -e ${regrid_script} ]]; then
     echoerr "ERROR: Unable to find ${regrid_script}"
 fi
 
-ncl year=${yearCur} ${regrid_script}
+#ncl year=${yearCur} yearmon=${last_yearmon} ${regrid_script}
+ncl out_f=\"${REGRID_OUT}\" ${regrid_script}
 
 if [[ $? != 0 ]]; then
     echoerr "ERROR: Problem running ${regrid_script}"
@@ -193,7 +194,7 @@ rm -f ferret.jnl tmp1.nc ${REGRID_OUT}
 
 #restoring correction
 
-restoring_sst=sst_oidaily_icecorr_icec30_fill_${last_year}.nc
+restoring_sst=sst_oidaily_icecorr_icec30_fill_${last_year}01_${last_yearmon}.nc
 
 REGRID_DIR=/home/nmme/oisst_spear/regrid #remove hard coding
 cp ${REGRID_DIR}/* .
