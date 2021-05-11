@@ -21,7 +21,7 @@ begin
 
 inFile="tmp1.nc"
 
-out = addfile("sst.day."+year+".1x1.nc","c")
+out = addfile(out_f, "c")
 
 ; This file contains a long-term mean of monthly air temperature on a fixed grid
 
