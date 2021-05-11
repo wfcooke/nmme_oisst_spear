@@ -5,9 +5,10 @@ umask 022
 iy=$(date +'%Y') #current year
 
 iy_prev=$( date -d "$(date +%Y-%m-15) -1 month" +'%Y' ) #year of the previous month
+mm=$( date -d "$(date +%Y-%m-15) -1 month" +'%^b%Y' )
 machine=ftp.cdc.noaa.gov
 
-dout=/local2/home/NMME/oisst_spear/raw
+dout=/local2/home/NMME/oisst_spear/raw/${mm}
 
 if [ ! -d ${dout} ]; then
   mkdir -p ${dout}

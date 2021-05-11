@@ -33,7 +33,14 @@ DATA_DIR=$( dirname ${BIN_DIR} )/data
 if [[ -z ${RAW_DIR} ]]; then
     echoerr "The variable RAW_DATA needs to be set in the configuration file ${BIN_DIR}/env.sh."
     exit 1
-elif [[ ! -e ${RAW_DIR} ]]; then
+fi
+
+#set up monthly raw dir
+MONYYYY=$( date -d "$(date +%Y-%m-15) -1 month" +'%^b%Y' )
+
+RAW_DIR_MM=${RAW_DIR}/${MONYYYY}
+
+if [[ ! -e ${RAW_DIR_MM} ]]; then
     echoerr "Raw data not available"
     exit 1
 fi
@@ -101,8 +108,8 @@ fi
 # Begin actual work, need to be in WORK_DIR
 cd ${WORK_DIR}
 
-    inFile_sst="${RAW_DIR}/sst.day.mean.${last_year}.v2.nc"
-    inFile_ice="${RAW_DIR}/icec.day.mean.${last_year}.v2.nc"
+    inFile_sst="${RAW_DIR_MM}/sst.day.mean.${last_year}.v2.nc"
+    inFile_ice="${RAW_DIR_MM}/icec.day.mean.${last_year}.v2.nc"
 if [[ ! -e ${inFile_sst} || ! -e ${inFile_ice} ]]; then
     echoerr "ERROR: Unable to find raw data file file for ${last_year}-${m}-${d}"
     exit 1 
@@ -110,7 +117,7 @@ fi
 
 #check that the first of the current month is in the files
 if [[ ${monCur} == 01 ]]; then
-    cdo seldate,${e_yyyymmdd} ${RAW_DIR}/sst.day.mean.${yearCur}.v2.nc out.nc
+    cdo seldate,${e_yyyymmdd} ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2.nc out.nc
 else
     cdo seldate,${e_yyyymmdd} ${inFile_sst} out.nc
 fi
@@ -125,7 +132,7 @@ fi
 rm -f out.nc
 
 if [[ ${monCur} == 01 ]]; then
-    cdo seldate,${e_yyyymmdd} ${RAW_DIR}/icec.day.mean.${yearCur}.v2.nc out.nc
+    cdo seldate,${e_yyyymmdd} ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2.nc out.nc
 else
     cdo seldate,${e_yyyymmdd} ${inFile_ice} out.nc
 fi
@@ -141,11 +148,11 @@ rm -f out.nc
 
 #concatenate ${yearCur} and ${yearPrev} files
 if [[ $monCur == 01 ]]; then
-    ncrcat ${RAW_DIR}/sst.day.mean.${yearPrev}.v2.nc ${inFile_sst} ${RAW_DIR}/sst.day.mean.${yearCur}.v2.nc tmp.sst.nc
-    ncrcat  ${RAW_DIR}/icec.day.mean.${yearPrev}.v2.nc ${inFile_ice} ${RAW_DIR}/icec.day.mean.${yearCur}.v2.nc tmp.ice.nc
+    ncrcat ${RAW_DIR_MM}/sst.day.mean.${yearPrev}.v2.nc ${inFile_sst} ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2.nc tmp.sst.nc
+    ncrcat  ${RAW_DIR_MM}/icec.day.mean.${yearPrev}.v2.nc ${inFile_ice} ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2.nc tmp.ice.nc
 else
-    ncrcat ${RAW_DIR}/sst.day.mean.${yearPrev}.v2.nc ${inFile_sst} tmp.sst.nc
-    ncrcat  ${RAW_DIR}/icec.day.mean.${yearPrev}.v2.nc ${inFile_ice} tmp.ice.nc
+    ncrcat ${RAW_DIR_MM}/sst.day.mean.${yearPrev}.v2.nc ${inFile_sst} tmp.sst.nc
+    ncrcat  ${RAW_DIR_MM}/icec.day.mean.${yearPrev}.v2.nc ${inFile_ice} tmp.ice.nc
 fi
 
 #do sea ice correction for ODA
