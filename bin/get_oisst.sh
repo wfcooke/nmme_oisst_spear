@@ -4,7 +4,8 @@ umask 022
 
 iy=$(date +'%Y') #current year
 
-iy_prev=$( date -d "$(date +%Y-%m-15) -1 month" +'%Y' ) #year of the previous month
+iy_prev=$( date -d "$(date +%Y-%m-15) -1 month -1 year" +'%Y' ) #year of the previous month
+iy_monprev=$( date -d "$(date +%Y-%m-15) -1 month" +'%Y' )
 mmyyyy=$( date -d "$(date +%Y-%m-15) -1 month" +'%Y%m' )
 mm=$( date -d "$(date +%Y-%m-15) -1 month" +'%^b%Y' )
 machine=ftp.cdc.noaa.gov
@@ -41,6 +42,21 @@ mget icec.day.mean.${iy_prev}.v2.nc
 mget sst.day.mean.${iy_prev}.v2.nc
 quit
 --
+
+if [[ ${iy} != ${iy_monprev} ]]; then
+echo "Downloading data for ${iy_monprev}"
+
+ftp -n $machine << --          || exit
+user anonymous Oar.Gfdl.Nmme@noaa.gov
+cd Datasets/noaa.oisst.v2.highres
+prompt
+binary
+mget icec.day.mean.${iy_monprev}.v2.nc
+mget sst.day.mean.${iy_monprev}.v2.nc
+quit
+--
+
+fi
 
 echo "Finished downloading data"
 
