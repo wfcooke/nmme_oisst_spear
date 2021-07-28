@@ -131,6 +131,25 @@ if [ ${gridsize} == ${missing} ]; then
 fi
 rm -f out.nc
 
+#copy data from 1st of the month to 2nd of the month
+#get last time value
+last_day_sst=$( ncdump -v time ${RAW_DIR_MM}/sst.day.mean.${last_year}.v2.nc | grep -Eo "[0-9]*" | tail -1 )
+
+#add 1 to $last_day_sst
+second=$(($last_day_sst+1))
+
+#extract data for 1st of month
+cdo seldate,${e_yyyymmdd} ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2.nc sst_tmp.nc
+
+#change time value in sst_tmp.nc
+ncap2 -s time={${second}} sst_tmp.nc sst_new.nc
+
+#append sst_new.nc to raw data
+ncrcat ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2.nc sst_new.nc ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2_new.nc
+
+#clean up tmp files
+rm -f sst_tmp.nc sst_new.nc
+
 if [[ ${monCur} == 01 ]]; then
     cdo seldate,${e_yyyymmdd} ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2.nc out.nc
 else
@@ -146,13 +165,38 @@ if [ ${gridsize} == ${missing} ]; then
 fi
 rm -f out.nc
 
+#copy data from 1st of the month to 2nd of the month
+#get last time value
+last_day_ice=$( ncdump -v time ${RAW_DIR_MM}/icec.day.mean.${last_year}.v2.nc | grep -Eo "[0-9]*" | tail -1 )
+
+#make sure $last_day sst and $last_day_ice are the same
+if [[ ${last_day_sst} != ${last_day_ice} ]]; then
+    echo "ERROR last timestamp in sst file ${last_day_sst} not equal to ice file ${last_day_ice}"
+    exit 1
+fi
+
+#add 1 to $last_day_ice
+second=$(($last_day_ice+1))
+
+#extract data for 1st of month
+cdo seldate,${e_yyyymmdd} ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2.nc ice_tmp.nc
+
+#change time value in sst_ice.nc
+ncap2 -s time={${second}} ice_tmp.nc ice_new.nc
+
+#append sst_new.nc to raw data
+ncrcat ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2.nc ice_new.nc ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2_new.nc
+
+#clean up tmp files
+rm -f ice_tmp.nc ice_new.nc
+
 #concatenate ${yearCur} and ${yearPrev} files
 if [[ $monCur == 01 ]]; then
-    ncrcat ${RAW_DIR_MM}/sst.day.mean.${yearPrev}.v2.nc ${inFile_sst} ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2.nc tmp.sst.nc
-    ncrcat  ${RAW_DIR_MM}/icec.day.mean.${yearPrev}.v2.nc ${inFile_ice} ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2.nc tmp.ice.nc
+    ncrcat ${RAW_DIR_MM}/sst.day.mean.${yearPrev}.v2.nc ${inFile_sst} ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2_new.nc tmp.sst.nc
+    ncrcat  ${RAW_DIR_MM}/icec.day.mean.${yearPrev}.v2.nc ${inFile_ice} ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2_new.nc tmp.ice.nc
 else
-    ncrcat ${RAW_DIR_MM}/sst.day.mean.${yearPrev}.v2.nc ${inFile_sst} tmp.sst.nc
-    ncrcat  ${RAW_DIR_MM}/icec.day.mean.${yearPrev}.v2.nc ${inFile_ice} tmp.ice.nc
+    ncrcat ${RAW_DIR_MM}/sst.day.mean.${yearPrev}.v2.nc ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2_new.nc tmp.sst.nc
+    ncrcat  ${RAW_DIR_MM}/icec.day.mean.${yearPrev}.v2.nc ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2_new.nc tmp.ice.nc
 fi
 
 #do sea ice correction for ODA
