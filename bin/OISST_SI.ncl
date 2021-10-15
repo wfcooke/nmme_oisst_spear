@@ -32,7 +32,7 @@ orig = dble2flt(data->SST)
 ;lev = data->level
 lat = orig&LAT
 lon = orig&LON
-time = orig&TIME-0.5
+time = orig&TIME
 ;model_lat = model->yh
 ;model_lon = model->xh
 
