@@ -18,6 +18,8 @@ BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # That is, we need to process ${yearPrev}1231 - ${yearCur}${monCur}01.
 yearCur=$( date '+%Y' )
 monCur=$( date '+%m' )
+monPrev=$( date -d "${yearCur}-${monCur}-01 - 1month" '+%m' )
+yearmonPrev=$( date -d "${yearCur}-${monCur}-01 - 1month" '+%Y' )
 
 # Source the env.sh file for the current environment, or exit if it doesn't exit.
 if [[ ! -e ${BIN_DIR}/env.sh ]]; then
@@ -113,13 +115,56 @@ if [ ! -e ${RAW_DIR_MM}/oisst-avhrr-v02r01.${yearCur}${monCur}01.nc ] && [ ! -e 
     exit 0
 fi
 
-#concatenate files in $RAW_DIR_MM
 cd ${RAW_DIR_MM}
-fnames=$( ls )
+
+#concatenate files in $RAW_DIR_MM
+#use final data if available
+inFiles=''
+
+#add Dec files to $inFiles
+for d in $( seq -f '%02g' 1 31 ); do
+    fbase=oisst-avhrr-v02r01.${yearPrev}12${d}
+    if [ -e ${fbase}.nc ]; then
+            inFiles="${inFiles} ${fbase}.nc"
+        elif [ -e ${fbase}_preliminary.nc ]; then
+            inFiles="${inFiles} ${fbase}_preliminary.nc"
+        else
+            echoerr "ERROR: Unable to find raw data file for ${yearmonPrev}-${m}-${d}"
+            exit 1
+        fi
+done
+
+for m in $( seq -f '%02g' 1 $monPrev ); do
+    daysInMonth=$( date -d "${yearmonPrev}-${m}-01 + 1month - 1day" '+%d' )
+
+    for d in $( seq -f '%02g' 1 $daysInMonth ); do
+        fbase=oisst-avhrr-v02r01.${yearmonPrev}${m}${d}
+        #use preliminary data?
+        if [ -e ${fbase}.nc ]; then
+            inFiles="${inFiles} ${fbase}.nc"
+        elif [ -e ${fbase}_preliminary.nc ]; then
+            inFiles="${inFiles} ${fbase}_preliminary.nc"
+        else
+            echoerr "ERROR: Unable to find raw data file for ${yearmonPrev}-${m}-${d}"
+            exit 1
+        fi
+    done
+done
+
+#add first of current month to $inFiles
+fbase=oisst-avhrr-v02r01.${yearCur}${monCur}01
+if [ -e ${fbase}.nc ]; then
+    inFiles="${inFiles} ${fbase}.nc"
+elif [ -e ${fbase}_preliminary.nc ]; then
+    inFiles="${inFiles} ${fbase}_preliminary.nc"
+else
+    #this shouldn't happen because of check above
+    echoerr "ERROR: Unable to find raw data file for ${yearCur}-${monCur}-01"
+    exit 1
+fi
 
 # need to unpack files?
-
-ncrcat ${fnames} concat.nc
+ncrcat ${inFiles} concat.nc
 
 # average out and delete zlev variable/dimension
 ncwa -a zlev concat.nc tmp.nc
