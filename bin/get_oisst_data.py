@@ -309,7 +309,6 @@ def main():
     mon_list=[]
     for mon in mon_list_tmp:
         mon_list.append(mon.strftime('%Y%m')+'/')
-    print(mon_list)
     
     url_data_base=UrlData(base_url)
 
