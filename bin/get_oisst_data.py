@@ -260,7 +260,8 @@ def main():
     """Download the OISST data for use in GFDL's ECDA model"""
 
     # Read in the coniguration file
-    config = readConfig('oisst.conf')
+    conf_dir=os.path.join(os.path.dirname(os.path.abspath(__file__)))
+    config = readConfig('{}/oisst.conf'.format(conf_dir))
 
     # Set the configurations into variables
     scheme_url = config['scheme']
