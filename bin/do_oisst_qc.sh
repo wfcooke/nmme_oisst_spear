@@ -18,6 +18,8 @@ BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # That is, we need to process ${yearPrev}1231 - ${yearCur}${monCur}01.
 yearCur=$( date '+%Y' )
 monCur=$( date '+%m' )
+monPrev=$( date -d "${yearCur}-${monCur}-01 - 1month" '+%m' )
+yearmonPrev=$( date -d "${yearCur}-${monCur}-01 - 1month" '+%Y' )
 
 # Source the env.sh file for the current environment, or exit if it doesn't exit.
 if [[ ! -e ${BIN_DIR}/env.sh ]]; then
@@ -36,9 +38,11 @@ if [[ -z ${RAW_DIR} ]]; then
 fi
 
 #set up monthly raw dir
-MONYYYY=$( date -d "$(date +%Y-%m-15) -1 month" +'%^b%Y' )
+MONYYYY=$( date -d "$(date +%Y-%m-15)" +'%^b%Y' )
 
 RAW_DIR_MM=${RAW_DIR}/${MONYYYY}
+
+echo $RAW_DIR_MM
 
 if [[ ! -e ${RAW_DIR_MM} ]]; then
     echoerr "Raw data not available"
@@ -70,7 +74,7 @@ if [ ! -e ${OUT_DIR} ]; then
     mkdir -p ${OUT_DIR}
 fi
 
-# Get the year and month for current date - 1month
+# Get the year and month for current date - 1 year
 yearPrev=$( date -d "${yearCur}-${monCur}-01 - 1year" '+%Y' )
 
 # Special case for January
@@ -105,11 +109,83 @@ if [[ -e ${OKFILE} ]]; then
     exit 0
 fi
 
+#make sure data for the first of the month is in $RAW_DIR_MM
+if [ ! -e ${RAW_DIR_MM}/oisst-avhrr-v02r01.${yearCur}${monCur}01.nc ] && [ ! -e ${RAW_DIR_MM}/oisst-avhrr-v02r01.${yearCur}${monCur}01_preliminary.nc ]; then
+    echo "Data is not yet available for ${yearCur}-${monCur}-01. Exiting."
+    exit 0
+fi
+
+cd ${RAW_DIR_MM}
+
+#concatenate files in $RAW_DIR_MM
+#use final data if available
+inFiles=''
+
+#add Dec files to $inFiles
+for d in $( seq -f '%02g' 1 31 ); do
+    fbase=oisst-avhrr-v02r01.${yearPrev}12${d}
+    if [ -e ${fbase}.nc ]; then
+            inFiles="${inFiles} ${fbase}.nc"
+        elif [ -e ${fbase}_preliminary.nc ]; then
+            inFiles="${inFiles} ${fbase}_preliminary.nc"
+        else
+            echoerr "ERROR: Unable to find raw data file for ${yearmonPrev}-${m}-${d}"
+            exit 1
+        fi
+done
+
+for m in $( seq -f '%02g' 1 $monPrev ); do
+    daysInMonth=$( date -d "${yearmonPrev}-${m}-01 + 1month - 1day" '+%d' )
+
+    for d in $( seq -f '%02g' 1 $daysInMonth ); do
+        fbase=oisst-avhrr-v02r01.${yearmonPrev}${m}${d}
+        #use preliminary data?
+        if [ -e ${fbase}.nc ]; then
+            inFiles="${inFiles} ${fbase}.nc"
+        elif [ -e ${fbase}_preliminary.nc ]; then
+            inFiles="${inFiles} ${fbase}_preliminary.nc"
+        else
+            echoerr "ERROR: Unable to find raw data file for ${yearmonPrev}-${m}-${d}"
+            exit 1
+        fi
+    done
+done
+
+#add first of current month to $inFiles
+fbase=oisst-avhrr-v02r01.${yearCur}${monCur}01
+if [ -e ${fbase}.nc ]; then
+    inFiles="${inFiles} ${fbase}.nc"
+elif [ -e ${fbase}_preliminary.nc ]; then
+    inFiles="${inFiles} ${fbase}_preliminary.nc"
+else
+    #this shouldn't happen because of check above
+    echoerr "ERROR: Unable to find raw data file for ${yearCur}-${monCur}-01"
+    exit 1
+fi
+
+ncrcat ${inFiles} concat.nc
+
+# average out and delete zlev variable/dimension
+ncwa -a zlev concat.nc tmp.nc
+ncks -x -v zlev tmp.nc oisst-avhrr-v02r01.${yearPrev}12_${yearCur}${monCur}.nc
+
+ncdump -h oisst-avhrr-v02r01.${yearPrev}12_${yearCur}${monCur}.nc
+# clean up intermediate files
+rm -f concat.nc tmp.nc
+
+#extract variables sst, ice
+cdo selvar,sst oisst-avhrr-v02r01.${yearPrev}12_${yearCur}${monCur}.nc sst.day.mean.${last_year}.v2.nc
+cdo selvar,ice oisst-avhrr-v02r01.${yearPrev}12_${yearCur}${monCur}.nc ice.day.mean.${last_year}.v2.nc
+ncrename -v ice,icec ice.day.mean.${last_year}.v2.nc icec.day.mean.${last_year}.v2.nc
+
 # Begin actual work, need to be in WORK_DIR
 cd ${WORK_DIR}
 
     inFile_sst="${RAW_DIR_MM}/sst.day.mean.${last_year}.v2.nc"
     inFile_ice="${RAW_DIR_MM}/icec.day.mean.${last_year}.v2.nc"
+
+# sst file
+
 if [[ ! -e ${inFile_sst} || ! -e ${inFile_ice} ]]; then
     echoerr "ERROR: Unable to find raw data file file for ${last_year}-${m}-${d}"
     exit 1 
@@ -131,24 +207,9 @@ if [ ${gridsize} == ${missing} ]; then
 fi
 rm -f out.nc
 
-#copy data from 1st of the month to 2nd of the month
-#get last time value
-last_day_sst=$( ncdump -v time ${RAW_DIR_MM}/sst.day.mean.${last_year}.v2.nc | grep -Eo "[0-9]*" | tail -1 )
+cp ${inFile_sst} tmp.sst.nc
 
-#add 1 to $last_day_sst
-second=$(($last_day_sst+1))
-
-#extract data for 1st of month
-cdo seldate,${e_yyyymmdd} ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2.nc sst_tmp.nc
-
-#change time value in sst_tmp.nc
-ncap2 -s time={${second}} sst_tmp.nc sst_new.nc
-
-#append sst_new.nc to raw data
-ncrcat ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2.nc sst_new.nc ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2_new.nc
-
-#clean up tmp files
-rm -f sst_tmp.nc sst_new.nc
+# icec file
 
 if [[ ${monCur} == 01 ]]; then
     cdo seldate,${e_yyyymmdd} ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2.nc out.nc
@@ -164,40 +225,7 @@ if [ ${gridsize} == ${missing} ]; then
     exit 1
 fi
 rm -f out.nc
-
-#copy data from 1st of the month to 2nd of the month
-#get last time value
-last_day_ice=$( ncdump -v time ${RAW_DIR_MM}/icec.day.mean.${last_year}.v2.nc | grep -Eo "[0-9]*" | tail -1 )
-
-#make sure $last_day sst and $last_day_ice are the same
-if [[ ${last_day_sst} != ${last_day_ice} ]]; then
-    echo "ERROR last timestamp in sst file ${last_day_sst} not equal to ice file ${last_day_ice}"
-    exit 1
-fi
-
-#add 1 to $last_day_ice
-second=$(($last_day_ice+1))
-
-#extract data for 1st of month
-cdo seldate,${e_yyyymmdd} ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2.nc ice_tmp.nc
-
-#change time value in sst_ice.nc
-ncap2 -s time={${second}} ice_tmp.nc ice_new.nc
-
-#append sst_new.nc to raw data
-ncrcat ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2.nc ice_new.nc ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2_new.nc
-
-#clean up tmp files
-rm -f ice_tmp.nc ice_new.nc
-
-#concatenate ${yearCur} and ${yearPrev} files
-if [[ $monCur == 01 ]]; then
-    ncrcat ${RAW_DIR_MM}/sst.day.mean.${yearPrev}.v2.nc ${inFile_sst} ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2_new.nc tmp.sst.nc
-    ncrcat  ${RAW_DIR_MM}/icec.day.mean.${yearPrev}.v2.nc ${inFile_ice} ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2_new.nc tmp.ice.nc
-else
-    ncrcat ${RAW_DIR_MM}/sst.day.mean.${yearPrev}.v2.nc ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2_new.nc tmp.sst.nc
-    ncrcat  ${RAW_DIR_MM}/icec.day.mean.${yearPrev}.v2.nc ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2_new.nc tmp.ice.nc
-fi
+cp ${inFile_ice} tmp.ice.nc
 
 #do sea ice correction for ODA
 ferret <<!
@@ -205,7 +233,7 @@ use tmp.sst.nc
 use tmp.ice.nc
 set memory/size=2000
 !define a yearly axis
-DEFINE AXIS/CALENDAR=JULIAN/T="${sDate}:12:00:00":"${eDate}:12:00:00":1/UNITS=days tday
+DEFINE AXIS/CALENDAR=JULIAN/T="${sDate}:00:00:00":"${eDate}:00:00:00":1/UNITS=days tday
 let sst1 = IF icec[d=2] GT 0.25 THEN 1.8*(-1) ELSE sst[d=1]
 let sst2 = sst1[gt=tday]
 save/clobber/file=tmp1.nc sst2
@@ -255,7 +283,7 @@ use HadISST.sst.filled.nc
 use tmp.sst.nc
 use tmp.ice.nc
 set memory/size=2000
-DEFINE AXIS/CALENDAR=JULIAN/T="${sDate}:12:00:00":"${eDate}:12:00:00":1/UNITS=days tday
+DEFINE AXIS/CALENDAR=JULIAN/T="${sDate}:00:00:00":"${eDate}:00:00:00":1/UNITS=days tday
 let sst1 = IF icec[d=3] GT 0.30 THEN 1.8*(-1) ELSE sst[d=2]
 let sst2 = sst1[i=@FNR,j=@FNR,gt=tday]
 save/clobber/file=tmp1.nc sst2
