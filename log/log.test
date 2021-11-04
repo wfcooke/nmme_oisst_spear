@@ -1,3 +1,0 @@
-  File "get_oisst_data.py", line 17
-    from __future__ import print_function
-SyntaxError: from __future__ imports must occur at the beginning of the file
