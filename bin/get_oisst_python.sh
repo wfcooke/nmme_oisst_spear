@@ -9,6 +9,6 @@ source activate geo_scipy
 which python
 
 
-python /home/cem/git/nmme/oisst_spear/bin/get_oisst_data.py
+python /home/nmme/oisst_spear/bin/get_oisst_data.py
 
 conda deactivate
