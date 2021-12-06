@@ -40,10 +40,9 @@ XFER_TARGET=gfdl:/archive/$USER/NMME/INPUTS/oisst_spear/
 
 # The following loads the requried modules to run on the GFDL workstations
 . /usr/local/Modules/default/init/sh
-module load intel_compilers/11.1.073
-module load netcdf/4.2
+module load intel_compilers/2021.3.0
+#module load netcdf/4.2
 module load ferret/7.02
-#module load nco/4.3.1
 module load ncarg/6.2.0
 module load cdo
-module load fre/bronx-18
+module load fre/bronx-19
