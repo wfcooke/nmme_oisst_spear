@@ -192,11 +192,7 @@ if [[ ! -e ${inFile_sst} || ! -e ${inFile_ice} ]]; then
 fi                    
 
 #check that the first of the current month is in the files
-if [[ ${monCur} == 01 ]]; then
-    cdo seldate,${e_yyyymmdd} ${RAW_DIR_MM}/sst.day.mean.${yearCur}.v2.nc out.nc
-else
-    cdo seldate,${e_yyyymmdd} ${inFile_sst} out.nc
-fi
+cdo seldate,${e_yyyymmdd} ${inFile_sst} out.nc
 
 #check to see if data for date is missing
 gridsize=$( echo `cdo infon out.nc` | awk '{split($0,a," "); print a[20]}' )
@@ -211,11 +207,7 @@ cp ${inFile_sst} tmp.sst.nc
 
 # icec file
 
-if [[ ${monCur} == 01 ]]; then
-    cdo seldate,${e_yyyymmdd} ${RAW_DIR_MM}/icec.day.mean.${yearCur}.v2.nc out.nc
-else
-    cdo seldate,${e_yyyymmdd} ${inFile_ice} out.nc
-fi
+cdo seldate,${e_yyyymmdd} ${inFile_ice} out.nc
 
 #check to see if data for date is missing
 gridsize=$( echo `cdo infon out.nc` | awk '{split($0,a," "); print a[20]}' )

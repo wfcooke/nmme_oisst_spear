@@ -268,6 +268,7 @@ def main():
     host_url = config['hostUrl']
     path_url = config['hostPath']
     rawDataDir = config['outputDir']
+    netcdfDir = config['netcdfDir']
 
     # Initiate the Logger
     logger = init_logging(config['logDir'], config['logLevel'])
@@ -288,19 +289,35 @@ def main():
     # Check if rawDataDir exists, if not create it
     #save data for each month under new directory
     now=datetime.datetime.now()
-    current_mon_year=now.strftime('%^b%Y') 
+    current_mon_year=now.strftime('%^b%Y')
+
+    last_mon=datetime.datetime(now.year, now.month, 15) - relativedelta(months=1)
+    last_yyyymm=last_mon.strftime('%Y%m')
+
     outDir=os.path.join(rawDataDir, current_mon_year)
     try:
         os.makedirs(outDir)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
-    
+
+    # If NetCDF file already exists, don't download new data
+    last_ok=os.path.join(netcdfDir,last_yyyymm+'.OK')
+    if os.path.exists(last_ok)==True:
+        print('{} already exists, no need to download data to {}'.format(last_ok, outDir))
+        sys.exit(0)
+
     # Get data from Dec 31 of previous year to the first of this month
     currentTime = datetime.datetime.now()
     lastMonTime = datetime.datetime(currentTime.year, currentTime.month, 15) - relativedelta(years=1)
+
+    #special case for Jan 1
+    if currentTime.month==1:
+        #need to subtract 2 years from current date
+        lastMonTime = datetime.datetime(currentTime.year, currentTime.month, 15) - relativedelta(years=2)
     
     last=datetime.datetime(lastMonTime.year, 12, 15)
+
     #add one month for pandas date_range
     current_plus=datetime.datetime(currentTime.year, currentTime.month, 15) + relativedelta(months=1)
     
