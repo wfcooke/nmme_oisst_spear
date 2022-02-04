@@ -77,8 +77,8 @@ fi
 # Get the year and month for current date - 1 year
 yearPrev=$( date -d "${yearCur}-${monCur}-01 - 1year" '+%Y' )
 
-# Special case for January
-if [[ ${monCur} == 01 ]]; then
+# Special case for January and February
+if [[ "${monCur}" -lt "03" ]]; then
     #set yearPrev to yearPrev-1
     yearPrev=$(( $yearPrev -1 ))
 fi
@@ -133,6 +133,29 @@ for d in $( seq -f '%02g' 1 31 ); do
             exit 1
         fi
 done
+
+#Special case for Feb 1 init forecast
+#Process data for $yearPrev+1
+if [ "${monCur}" -eq "02" ]; then
+    year=$((yearPrev+1))
+    for m in $( seq -f '%02g' 1 12 ); do
+        daysInMonth=$( date -d "${year}-${m}-01 + 1month - 1day" '+%d' )
+
+        for d in $( seq -f '%02g' 1 $daysInMonth ); do
+            fbase=oisst-avhrr-v02r01.${year}${m}${d}
+            #use preliminary data?
+            if [ -e ${fbase}.nc ]; then
+                inFiles="${inFiles} ${fbase}.nc"
+
+            elif [ -e ${fbase}_preliminary.nc ]; then
+               inFiles="${inFiles} ${fbase}_preliminary.nc"
+            else
+                echoerr "ERROR: Unable to find raw data file for ${year}-${m}-${d}"
+                exit 1
+            fi
+        done
+    done
+fi
 
 for m in $( seq -f '%02g' 1 $monPrev ); do
     daysInMonth=$( date -d "${yearmonPrev}-${m}-01 + 1month - 1day" '+%d' )
