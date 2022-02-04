@@ -311,8 +311,8 @@ def main():
     currentTime = datetime.datetime.now()
     lastMonTime = datetime.datetime(currentTime.year, currentTime.month, 15) - relativedelta(years=1)
 
-    #special case for Jan 1
-    if currentTime.month==1:
+    #special case for Jan and Feb 1
+    if currentTime.month<=2:
         #need to subtract 2 years from current date
         lastMonTime = datetime.datetime(currentTime.year, currentTime.month, 15) - relativedelta(years=2)
     
