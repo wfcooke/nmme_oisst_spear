@@ -8,7 +8,9 @@ export PATH="/nbhome/Colleen.McHugh/miniconda/bin:$PATH"
 source activate geo_scipy
 which python
 
+BIN_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+echo $BIN_DIR
 
-python /home/nmme/oisst_spear/bin/get_oisst_data.py
+python ${BIN_DIR}/get_oisst_data.py
 
 conda deactivate
