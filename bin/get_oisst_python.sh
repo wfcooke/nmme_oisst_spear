@@ -1,7 +1,7 @@
 #!/bin/sh
 
 . /usr/local/Modules/default/init/sh
-module load anaconda
+module load conda
 export PATH="/nbhome/Colleen.McHugh/miniconda/bin:$PATH"
 
 
