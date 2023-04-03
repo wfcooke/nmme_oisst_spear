@@ -12,6 +12,7 @@ ulimit -a
 
 # Location of this script
 BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+REGRID_DIR="$( cd "${BIN_DIR}" && cd ../regrid && pwd )"
 
 # Default settings for year/month
 # Need everything for Dec 31 of the previous year up the the first of the current month
@@ -110,7 +111,7 @@ if [[ -e ${OKFILE} ]]; then
 fi
 
 #make sure data for the first of the month is in $RAW_DIR_MM
-if [ ! -e ${RAW_DIR_MM}/oisst-avhrr-v02r01.${yearCur}${monCur}01.nc ] && [ ! -e ${RAW_DIR_MM}/oisst-avhrr-v02r01.${yearCur}${monCur}01_preliminary.nc ]; then
+if [ ! -e ${RAW_DIR_MM}/oisst-avhrr-v02r01.${yearCur}${monCur}01.nc ] && [ ! -e ${RAW_DIR_MM}/oisst-avhrr-v02r01.${yearCur}${monCur}01_preliminary.nc ] && [ ! -e ${RAW_DIR_MM}/oisst-avhrr-v02r01.${yearCur}${monCur}01_preliminary_new.nc ]; then
     echo "Data is not yet available for ${yearCur}-${monCur}-01. Exiting."
     exit 0
 fi
@@ -128,6 +129,8 @@ for d in $( seq -f '%02g' 1 31 ); do
             inFiles="${inFiles} ${fbase}.nc"
         elif [ -e ${fbase}_preliminary.nc ]; then
             inFiles="${inFiles} ${fbase}_preliminary.nc"
+        elif [ -e ${fbase}_preliminary_new.nc ]; then
+            inFiles="${inFiles} ${fbase}_preliminary_new.nc"
         else
             echoerr "ERROR: Unable to find raw data file for ${yearmonPrev}-${m}-${d}"
             exit 1
@@ -143,12 +146,14 @@ if [ "${monCur}" -eq "02" ]; then
 
         for d in $( seq -f '%02g' 1 $daysInMonth ); do
             fbase=oisst-avhrr-v02r01.${year}${m}${d}
-            #use preliminary data?
             if [ -e ${fbase}.nc ]; then
                 inFiles="${inFiles} ${fbase}.nc"
 
             elif [ -e ${fbase}_preliminary.nc ]; then
                inFiles="${inFiles} ${fbase}_preliminary.nc"
+
+            elif [ -e ${fbase}_preliminary_new.nc ]; then
+               inFiles="${inFiles} ${fbase}_preliminary_new.nc"
             else
                 echoerr "ERROR: Unable to find raw data file for ${year}-${m}-${d}"
                 exit 1
@@ -162,11 +167,12 @@ for m in $( seq -f '%02g' 1 $monPrev ); do
 
     for d in $( seq -f '%02g' 1 $daysInMonth ); do
         fbase=oisst-avhrr-v02r01.${yearmonPrev}${m}${d}
-        #use preliminary data?
         if [ -e ${fbase}.nc ]; then
             inFiles="${inFiles} ${fbase}.nc"
         elif [ -e ${fbase}_preliminary.nc ]; then
             inFiles="${inFiles} ${fbase}_preliminary.nc"
+        elif [ -e ${fbase}_preliminary_new.nc ]; then
+            inFiles="${inFiles} ${fbase}_preliminary_new.nc"
         else
             echoerr "ERROR: Unable to find raw data file for ${yearmonPrev}-${m}-${d}"
             exit 1
@@ -180,6 +186,8 @@ if [ -e ${fbase}.nc ]; then
     inFiles="${inFiles} ${fbase}.nc"
 elif [ -e ${fbase}_preliminary.nc ]; then
     inFiles="${inFiles} ${fbase}_preliminary.nc"
+elif [ -e ${fbase}_preliminary_new.nc ]; then
+    inFiles="${inFiles} ${fbase}_preliminary_new.nc"
 else
     #this shouldn't happen because of check above
     echoerr "ERROR: Unable to find raw data file for ${yearCur}-${monCur}-01"
@@ -290,7 +298,6 @@ rm -f ferret.jnl tmp1.nc ${REGRID_OUT}
 
 restoring_sst=sst_oidaily_icecorr_icec30_fill_${last_year}01_${last_yearmon}.nc
 
-REGRID_DIR=/home/nmme/oisst_spear/regrid #remove hard coding
 cp ${REGRID_DIR}/* .
 
 ferret <<!
