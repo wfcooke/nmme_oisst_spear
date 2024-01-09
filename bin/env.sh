@@ -43,6 +43,6 @@ XFER_TARGET=gfdl:/archive/$USER/NMME/INPUTS/oisst_spear/
 module load pyferret
 module load ncl/6.6.2
 module load cdo
-module load nco/5.0.1
-module load fre-nctools/2023.01
+module load nco/5.1.5
+module load fre-nctools/2023.01.01
 module load gcp
