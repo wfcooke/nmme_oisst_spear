@@ -44,5 +44,5 @@ module load pyferret
 module load ncl/6.6.2
 module load cdo
 module load nco/5.1.5
-module load fre-nctools/2023.01.01
+module load fre-nctools/2023.01.02
 module load gcp
