@@ -251,7 +251,7 @@ rm -f out.nc
 cp ${inFile_ice} tmp.ice.nc
 
 #do sea ice correction for ODA
-ferret <<!
+pyferret <<!
 use tmp.sst.nc
 use tmp.ice.nc
 set memory/size=2000
@@ -300,7 +300,7 @@ restoring_sst=sst_oidaily_icecorr_icec30_fill_${last_year}01_${last_yearmon}.nc
 
 cp ${REGRID_DIR}/* .
 
-ferret <<!
+pyferret <<!
 use HadISST.sst.filled.nc
 use tmp.sst.nc
 use tmp.ice.nc
