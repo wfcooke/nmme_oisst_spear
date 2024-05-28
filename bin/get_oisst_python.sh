@@ -1,7 +1,7 @@
 #!/bin/sh
 
 . /usr/local/Modules/default/init/sh
-module load conda
+module load miniforge
 export PATH="/nbhome/Colleen.McHugh/miniconda/bin:$PATH"
 
 
